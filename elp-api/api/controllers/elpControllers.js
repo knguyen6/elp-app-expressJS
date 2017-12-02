@@ -2,6 +2,10 @@
 var mysql = require('../models/elpModels');
 var bodyParser = require('body-parser');
 var _ = require('underscore')
+var Joi = require('express-joi').Joi;
+
+// var Joi = expressJoi.Joi; // The exposed Joi object used to create schemas and custom types
+
 
 
 exports.handleExample = function(req, res) {
@@ -53,18 +57,43 @@ exports.getBusinessInfoById = function(req, res) {
             res.send(responseObj('error', err))
         }
 
-        else if (!result[0]){
+        else if (!result[0][0]){
             res.status(404)
             res.send(responseObj('error',"Business doesn't exist"))
         }
-        else
+        else {
+            result[0] = _.uniq(result[0], 'contact'); //dedup
 
-        //TODO consolidate this business contact(phone, email)
-            res.send(responseObj('success', result[0]))
+            var business = result[0][0];//default to the 1st object.
+
+            //more than 2 objs in result, meaning 1 contain phone, 1 contain email
+            if (result[0].length > 1) {
+                business = mergeData(result[0])
+            }
+            else {
+                //for single object, put contact into either email or phone:
+                business.email = isEmail(business.contact) ? business.contact : ""
+                business.phone = !(isEmail(business.contact)) ? business.contact : ""
+                delete business.contact
+            }
+            res.send(responseObj('success', business))
+        }
+
+
+
     });//DoQuery
 
 };
 
+function mergeData(results) {
+    var bus = results[0];
+
+    bus.email = isEmail(bus.contact) ? bus.contact : results[1].contact;
+    bus.phone = isEmail(bus.contact) ? result[1].contact : bus.contact;
+
+    delete bus.contact;
+    return bus;
+}
 exports.getUserById = function(req, res) {
     if (!('userId' in req.params)){
         res.status(400)
@@ -197,4 +226,10 @@ exports.addReview = function(req, res) {
 //General object to send response.
 function responseObj(statusMessage, data) {
     return { status: statusMessage, data: data }
+}
+
+//simple check if a string is email or not
+function isEmail(data) {
+    const validateData = Joi.validate({ email: data }, {email: Joi.string().email()});
+    return (validateData == null && data.indexOf('@') > -1) ? true : false;
 }

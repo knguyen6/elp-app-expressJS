@@ -1,6 +1,10 @@
 'use strict';
 module.exports = function(app) {
   var elpApp = require('../controllers/elpControllers');
+  var expressJoi = require('express-joi');
+
+  var Joi = expressJoi.Joi; // The exposed Joi object used to create schemas and custom types
+
 
   // elpApp Routes
   app.route('/example')
@@ -10,7 +14,7 @@ module.exports = function(app) {
         .get(elpApp.searchData)
 
     app.route('/business/:busId')
-      .get(elpApp.getBusinessInfoById)
+      .get(expressJoi.joiValidate({busId: Joi.number().required()}, {strict: true}), elpApp.getBusinessInfoById)
 
     app.route('/user/:userId')
         .get(elpApp.getUserById)

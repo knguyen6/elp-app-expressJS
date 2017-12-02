@@ -2,7 +2,11 @@
 var mysql = require('mysql2')
 
 var pool  = mysql.createPool({
-    //paste creds here
+    connectionLimit : 10,
+    host: "elp-us-west-primary.mysql.database.azure.com",
+    user: "elp@elp-us-west-primary",
+    password: 'LS1setup!',
+    database: 'elp'
 });
 
 function DoQuery(query, params, callback){
