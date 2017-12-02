@@ -3,8 +3,16 @@ var mysql = require('../models/elpModels');
 var bodyParser = require('body-parser');
 var _ = require('underscore')
 
+
+exports.handleExample = function(req, res) {
+
+    res.send("Hello world !")
+
+};
+
+
 //Search by query params:
-//location(string), businessName (string), range(number),
+//location(string), businessName (string),,
 //rating(number), averagePrice(string)
 exports.searchData = function(req, res) {
 
@@ -14,11 +22,9 @@ exports.searchData = function(req, res) {
     var params = req.params;
     console.log("query params: ", req.params)
 
-    mysql.DoQuery('SELECT * from business where city=?',
-        [params.location],
-        //TODO: use all these params
-        // [params.location, params.businessName, params.range,
-                // params.rating, params.averagePrice]
+    mysql.DoQuery('call search(?,?,?,?)',
+        [params.location, params.businessName,
+        params.rating, params.averagePrice],
         function(err, result){
         if (err){
             console.log("Error:", err)
@@ -26,12 +32,13 @@ exports.searchData = function(req, res) {
             res.json(responseObj('error', err))
         }
         else
-            res.json(responseObj('success', result))
+        var data = (result && result[0]) ? result[0] : []
+
+        res.send(responseObj('success', data))
     });//DoQuery
 
 }
 
-//TODO: replace query by mysql function
 exports.getBusinessInfoById = function(req, res) {
 
     if (!('busId' in req.params)){
@@ -39,7 +46,7 @@ exports.getBusinessInfoById = function(req, res) {
         res.send(responseObj('error', 'Missing busId'));
     }
 
-    mysql.DoQuery('SELECT * from business where id=?', [req.params.busId], function(err, result){
+    mysql.DoQuery('call getBusinessById(?)', [req.params.busId], function(err, result){
         if (err){
             console.log("Error:", err)
             res.status(500)
@@ -51,19 +58,20 @@ exports.getBusinessInfoById = function(req, res) {
             res.send(responseObj('error',"Business doesn't exist"))
         }
         else
+
+        //TODO consolidate this business contact(phone, email)
             res.send(responseObj('success', result[0]))
     });//DoQuery
 
 };
 
-//TODO: replace query by mysql function
 exports.getUserById = function(req, res) {
     if (!('userId' in req.params)){
         res.status(400)
         return res.send(responseObj('error', 'Missing userId parameter'));
     }
 
-    mysql.DoQuery('SELECT * from userinfo where id=?', [req.params.userId], function(err, result){
+    mysql.DoQuery('call getUserById(?)', [req.params.userId], function(err, result){
         if (err){
             console.log("Error:", err)
             res.status(500)
@@ -85,42 +93,44 @@ exports.getUserReviewsAndRatings = function(req, res) {
         return res.send(responseObj('error', 'Missing userId parameter'));
     }
 
-    //TODO: this is just sample query, replace by function name
-    mysql.DoQuery('SELECT * from userreview as re, userrating as ra where re.userid=? or ra.userid=?',
-    [req.params.userId, req.params.userId],
+    mysql.DoQuery('call getUserReviewsAndRatings(?)',
+    [req.params.userId],
     function(err, result){
+
         if (err){
             console.log("Error:", err)
             res.status(500)
             res.send(responseObj('error', err))
         }
-        else
-            res.send(responseObj('success', result))
+        else {
+            var data = []
+            var headerIdx = result.length-1
+            if (result && result.length > 0) {
+                data = result.slice(0, headerIdx); //take out the headers
+                data = result[0].concat(result[1])
+            }
+            res.send(responseObj('success', data))
+        }
     })
 };
 
-//TODO:
-/*
-"city":"hawaii",
-	"address":"98 uuuuu st",
-	"businessHours":"W:8-9, Th:10-4",
-	"averagePrice":"high"
-}
-*/
+
 exports.addABusiness = function(req, res) {
 
     var payload = req.body;
     console.log("\npayload: ", payload)
     if ((_.isEmpty(payload)) ||!payload.name || !payload.city || !payload.address
-        || !payload.businessHours || !payload.averagePrice) {
+        || !payload.businessHours || !payload.averagePrice
+        || !payload.phone || ! payload.category) {
         res.status(400)
-        return res.send(responseObj('error', 'missing field in payload, required: name, city, address, businessHours, averagePrice'))
+        return res.send(responseObj('error', 'missing field in payload, required: '+
+            'name, city, address, businessHours, averagePrice, phone or email, '+
+            'category (cafe, fine dining, super market, restaurant, bakery)'))
     }
 
-    //TODO: this is just sample query, replace by function name
-    // (city, address, businesshours, averageprice)
-    mysql.DoQuery('insert into business values(?,?,?,?,?,?)',
-    ['bus4', 'blabla', payload.city,payload.address,payload.businessHours,payload.averagePrice],
+    mysql.DoQuery('call addNewBusiness(?,?,?,?,?,?,?,?)',
+    [payload.name, payload.city,payload.address,payload.businessHours,
+    payload.averagePrice, payload.phone, payload.email, payload.category],
     function(err, result){
         if (err){
             console.log("Error:", err)
@@ -134,6 +144,8 @@ exports.addABusiness = function(req, res) {
     })
 };
 
+
+
 exports.addRating = function(req, res) {
     var payload = req.body;
     console.log("\npayload: ", payload)
@@ -142,11 +154,8 @@ exports.addRating = function(req, res) {
         return res.send(responseObj('error', 'missing field in payload, required: rating'))
     }
 
-
-    //TODO: this is just sample query, replace by function name
-    // (id, userid, businessid, rating)
-    mysql.DoQuery('insert into userrating values(?, ?,?,?)',
-    ['rating3', 'user1', 'busID1', 5],
+    mysql.DoQuery('call addNewRating(?,?,?)',
+    [payload.userId, payload.busId, payload.rating],
     function(err, result){
         if (err){
             console.log("Error:", err)
@@ -163,16 +172,13 @@ exports.addRating = function(req, res) {
 exports.addReview = function(req, res) {
     var payload = req.body;
     console.log("\npayload: ", payload)
-    if (_.isEmpty(payload) || !('review' in payload) || (payload.review.length < 5)) {
+    if (_.isEmpty(payload) || !('review' in payload) || (payload.review && payload.review.length < 5)) {
         res.status(400)
         return res.send(responseObj('error', 'missing field in payload, required: review'))
     }
 
-
-    //TODO: this is just sample query, replace by function name
-    // (id, userid, businessid, review)
-    mysql.DoQuery('insert into userreview values(?, ?,?,?)',
-    ['rating3', 'user1', 'busID1', payload.review],
+    mysql.DoQuery('call addNewReview(?,?,?)',
+    [payload.userId, payload.busId, payload.review],
     function(err, result){
         if (err){
             console.log("Error:", err)

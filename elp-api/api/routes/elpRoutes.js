@@ -3,6 +3,8 @@ module.exports = function(app) {
   var elpApp = require('../controllers/elpControllers');
 
   // elpApp Routes
+  app.route('/example')
+      .get(elpApp.handleExample)
 
     app.route('/search')
         .get(elpApp.searchData)
@@ -19,10 +21,10 @@ module.exports = function(app) {
     app.route('/business')
         .post(elpApp.addABusiness);
 
-    app.route('/user/rating')
+    app.route('/user/:userId/rating')
         .post(elpApp.addRating);
 
-    app.route('/user/review')
+    app.route('/user/:userId/review')
         .post(elpApp.addReview);
 
 };
