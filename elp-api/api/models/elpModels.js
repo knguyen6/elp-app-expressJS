@@ -2,7 +2,7 @@
 var mysql = require('mysql2')
 
 var pool  = mysql.createPool({
-    //put azure connection string here, or env variable
+    //paste creds here
 });
 
 function DoQuery(query, params, callback){

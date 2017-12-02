@@ -119,17 +119,18 @@ exports.addABusiness = function(req, res) {
 
     var payload = req.body;
     console.log("\npayload: ", payload)
-    if ((_.isEmpty(payload)) ||!payload.name || !payload.city || !payload.address
+    if ((_.isEmpty(payload)) ||!payload.name ||!payload.description
+        || !payload.city || !payload.address
         || !payload.businessHours || !payload.averagePrice
         || !payload.phone || ! payload.category) {
         res.status(400)
         return res.send(responseObj('error', 'missing field in payload, required: '+
-            'name, city, address, businessHours, averagePrice, phone or email, '+
+            'name, description, city, address, businessHours, averagePrice, phone or email, '+
             'category (cafe, fine dining, super market, restaurant, bakery)'))
     }
 
-    mysql.DoQuery('call addNewBusiness(?,?,?,?,?,?,?,?)',
-    [payload.name, payload.city,payload.address,payload.businessHours,
+    mysql.DoQuery('call addNewBusiness(?,?,?,?,?,?,?,?,?)',
+    [payload.name, payload.description, payload.city,payload.address,payload.businessHours,
     payload.averagePrice, payload.phone, payload.email, payload.category],
     function(err, result){
         if (err){
