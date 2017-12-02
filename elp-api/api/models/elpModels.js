@@ -3,14 +3,14 @@ var mysql = require('mysql2')
 
 var pool  = mysql.createPool({
     connectionLimit : 10,
-    host: "elp-us-west-primary.mysql.database.azure.com",
-    user: "elp@elp-us-west-primary",
-    password: 'LS1setup!',
+    host: "<host url here> ",
+    user: "<put user name here> ",
+    password: '<pw here>',
     database: 'elp'
 });
 
 function DoQuery(query, params, callback){
-    console.log("elp-api: ready to query ... \n")
+    console.log("elp-api elpModels.js: ready to query ... \n")
     pool.getConnection(function(err, connection) {
     if (err) {
         console.log("Error pooling connection: ", err)

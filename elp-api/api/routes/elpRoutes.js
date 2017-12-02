@@ -17,18 +17,41 @@ module.exports = function(app) {
       .get(expressJoi.joiValidate({busId: Joi.number().required()}, {strict: true}), elpApp.getBusinessInfoById)
 
     app.route('/user/:userId')
-        .get(elpApp.getUserById)
+        .get(expressJoi.joiValidate({userId: Joi.number().required()}, {strict: true}), elpApp.getUserById)
 
     app.route('/user/:userId/reviews-ratings')
-      .get(elpApp.getUserReviewsAndRatings)
+      .get(expressJoi.joiValidate({userId: Joi.number().required()}, {strict: true}), elpApp.getUserReviewsAndRatings)
+
+    const validBusinessPayload = {
+        name : Joi.string().required(),
+        description: Joi.string().required(),
+        city: Joi.string().required(),
+        address: Joi.string().required(),
+        businessHours: Joi.string().required(),
+        averagePrice: Joi.string().required(),
+        category: Joi.string().required(),
+        email: Joi.string().email().optional(),
+        phone: Joi.string().optional()
+    };
 
     app.route('/business')
-        .post(elpApp.addABusiness);
+        .post(expressJoi.joiValidate(validBusinessPayload), elpApp.addABusiness);
 
+    const validUserRating = {
+        userId: Joi.number(),
+        busId: Joi.number().required(),
+        rating: Joi.number().min(1).max(5).required()
+    }
     app.route('/user/:userId/rating')
-        .post(elpApp.addRating);
+        .post(expressJoi.joiValidate(validUserRating, {strict: true}), elpApp.addRating);
 
+
+    const validUserReview = {
+        userId: Joi.number(),
+        busId: Joi.number().required(),
+        review: Joi.string().min(1).max(140).required()
+    }
     app.route('/user/:userId/review')
-        .post(elpApp.addReview);
+        .post(expressJoi.joiValidate(validUserReview, {strict: true}), elpApp.addReview);
 
 };

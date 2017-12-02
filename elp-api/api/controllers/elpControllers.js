@@ -147,18 +147,8 @@ exports.getUserReviewsAndRatings = function(req, res) {
 exports.addABusiness = function(req, res) {
 
     var payload = req.body;
-    console.log("\npayload: ", payload)
-    if ((_.isEmpty(payload)) ||!payload.name ||!payload.description
-        || !payload.city || !payload.address
-        || !payload.businessHours || !payload.averagePrice
-        || !payload.phone || ! payload.category) {
-        res.status(400)
-        return res.send(responseObj('error', 'missing field in payload, required: '+
-            'name, description, city, address, businessHours, averagePrice, phone or email, '+
-            'category (cafe, fine dining, super market, restaurant, bakery)'))
-    }
 
-    mysql.DoQuery('call addNewBusiness(?,?,?,?,?,?,?,?,?)',
+    mysql.DoQuery('call addNewBusness(?,?,?,?,?,?,?,?,?)',
     [payload.name, payload.description, payload.city,payload.address,payload.businessHours,
     payload.averagePrice, payload.phone, payload.email, payload.category],
     function(err, result){
@@ -178,14 +168,9 @@ exports.addABusiness = function(req, res) {
 
 exports.addRating = function(req, res) {
     var payload = req.body;
-    console.log("\npayload: ", payload)
-    if (_.isEmpty(payload) || !('rating' in payload)) {
-        res.status(400)
-        return res.send(responseObj('error', 'missing field in payload, required: rating'))
-    }
 
     mysql.DoQuery('call addNewRating(?,?,?)',
-    [payload.userId, payload.busId, payload.rating],
+    [req.params.userId, payload.busId, payload.rating],
     function(err, result){
         if (err){
             console.log("Error:", err)
@@ -201,14 +186,9 @@ exports.addRating = function(req, res) {
 
 exports.addReview = function(req, res) {
     var payload = req.body;
-    console.log("\npayload: ", payload)
-    if (_.isEmpty(payload) || !('review' in payload) || (payload.review && payload.review.length < 5)) {
-        res.status(400)
-        return res.send(responseObj('error', 'missing field in payload, required: review'))
-    }
 
     mysql.DoQuery('call addNewReview(?,?,?)',
-    [payload.userId, payload.busId, payload.review],
+    [req.params.userId, payload.busId, payload.review],
     function(err, result){
         if (err){
             console.log("Error:", err)
